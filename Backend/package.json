@@ -1,0 +1,29 @@
+{
+  "name": "vox-debate-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend of our application",
+  "main": "index.js",
+  "scripts": {
+    "server": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
+    "client": "npm run dev --prefix ../Frontend",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  },
+  "author": "Soumik Sen",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "bcrypt": "^5.1.1",
+    "concurrently": "^9.1.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.12.0",
+    "mongoose": "^8.8.4",
+    "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.1.7",
+    "prettier": "^3.4.2"
+  }
+}

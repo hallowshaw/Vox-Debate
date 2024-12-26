@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+@layer base {
+  .light {
+    --sidebar-background: 35 15% 98%; /* Soft peach background */
+    --sidebar-foreground: 35 15% 25%; /* Darker grayish text */
+    --sidebar-primary: 35 85% 45%; /* Vivid orange primary */
+    --sidebar-primary-foreground: 0 0% 100%; /* White text on primary */
+    --sidebar-accent: 260 75% 60%; /* Soft purple accent */
+    --sidebar-accent-foreground: 0 0% 100%; /* White accent text */
+    --sidebar-border: 35 20% 90%; /* Light grayish-orange border */
+    --sidebar-ring: 35 80% 55%; /* Vibrant orange ring */
+  }
+
+  /* Dark mode styles */
+  .dark {
+    --sidebar-background: 35 15% 12%; /* Deep, dark orange-brown background */
+    --sidebar-foreground: 35 5% 85%; /* Light gray text */
+    --sidebar-primary: 35 90% 50%; /* Bright, vivid orange primary */
+    --sidebar-primary-foreground: 35 15% 10%; /* Darker text on primary */
+    --sidebar-accent: 260 40% 30%; /* Darker purple accent */
+    --sidebar-accent-foreground: 0 0% 100%; /* White accent text */
+    --sidebar-border: 35 30% 35%; /* Darker orange-brown border */
+    --sidebar-ring: 35 90% 65%; /* Brighter vibrant orange ring */
+  }
+}

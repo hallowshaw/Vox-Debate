@@ -1,0 +1,61 @@
+/* Reset default styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Default dark mode styles */
+.dark {
+  --background-gradient: linear-gradient(to bottom, #160430, #450d96);
+  --text-color: #eaeaea;
+  --primary-color: #ff9800;
+  --sidebar-background: #512d6d;
+  --sidebar-foreground: #ffffff;
+  --sidebar-border: #f57c00;
+  --sidebar-primary-foreground: #ff9800;
+  --sidebar-accent: #9c27b0;
+  --sidebar-accent-foreground: #ffffff;
+}
+
+/* Light mode styles */
+.light {
+  --background-gradient: linear-gradient(to bottom, #cfb7ff, #ede8f7);
+  --text-color: #4a148c;
+  --primary-color: #ff5722;
+  --sidebar-background: #f8bbd0;
+  --sidebar-foreground: #4a148c;
+  --sidebar-border: #ff9800;
+  --sidebar-primary-foreground: #ff5722;
+  --sidebar-accent: #9c27b0;
+  --sidebar-accent-foreground: #ffffff;
+}
+
+/* Global styles for the app */
+html,
+body {
+  min-height: 100vh; /* Ensure full height of the viewport */
+  background: var(--background-gradient);
+  background-size: 100% 100%; /* Ensure gradient covers the entire viewport */
+  background-repeat: no-repeat;
+  color: var(--text-color);
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll; /* Prevent issues on mobile */
+  }
+}
+
+a {
+  color: var(--primary-color);
+  transition: color 0.3s ease;
+}
+
+/* Main content area */
+main {
+  margin-left: 10px;
+  padding-top: 20px;
+  transition: margin-left 0.3s ease, padding 0.3s ease;
+}
