@@ -1,23 +1,37 @@
 import { useState, useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { FaMicrophoneAlt, FaStop, FaPaperPlane } from "react-icons/fa";
-import WavEncoder from "wav-encoder";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import SpeechRecognition, {
+  useSpeechRecognition,
+} from "react-speech-recognition";
 
 const PlaygroundCard = () => {
   const [messages, setMessages] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [liveTranscription, setLiveTranscription] = useState("");
   const [editableTranscription, setEditableTranscription] = useState(""); // For editing
+  const [emotion, setEmotion] = useState("neutral");
   const [error, setError] = useState("");
   const [isTyping, setIsTyping] = useState(false); // Typing animation
   const [typingText, setTypingText] = useState("");
-  const mediaRecorderRef = useRef(null);
-  const speechRecognitionRef = useRef(null);
+  const [isEmotionDetecting, setIsEmotionDetecting] = useState(false); // To track emotion detection status
   const theme = useSelector((state) => state.theme.theme);
   const chatContainerRef = useRef(null);
+  const audioChunksRef = useRef([]); // To store the audio chunks for recording
+  const mediaRecorderRef = useRef(null); // To manage the recorder
+
+  const { transcript, resetTranscript, browserSupportsSpeechRecognition } =
+    useSpeechRecognition();
+
+  useEffect(() => {
+    // Stop speech synthesis when the component is unmounted or reloaded
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     chatContainerRef.current?.scrollTo(
@@ -26,125 +40,142 @@ const PlaygroundCard = () => {
     );
   }, [messages]);
 
-  const startRecording = () => {
+  useEffect(() => {
+    setEditableTranscription(transcript);
+  }, [transcript]);
+
+  const startRecording = async () => {
     if (isRecording) return;
+
+    if (!browserSupportsSpeechRecognition) {
+      setError("Your browser does not support speech recognition.");
+      return;
+    }
 
     setIsRecording(true);
     setError("");
-    setLiveTranscription("");
+    resetTranscript();
     setEditableTranscription(""); // Reset editable transcription
 
-    navigator.mediaDevices
-      .getUserMedia({ audio: true })
-      .then((stream) => {
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: "audio/webm",
+    // Start speech recognition
+    SpeechRecognition.startListening({ continuous: true });
+
+    // MediaRecorder setup to capture audio
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+
+      // Collect audio data chunks when available
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      // Once recording stops, send the audio data for emotion detection
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/wav",
         });
-        mediaRecorderRef.current = mediaRecorder;
+        await detectEmotion(audioBlob);
+      };
 
-        const chunks = [];
-        mediaRecorder.ondataavailable = (event) => chunks.push(event.data);
-
-        mediaRecorder.onstop = () => {
-          const webmBlob = new Blob(chunks, { type: "audio/webm" });
-          setAudioBlob(webmBlob);
-        };
-
-        mediaRecorder.start();
-
-        // Start live transcription
-        const SpeechRecognition =
-          window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-          const recognition = new SpeechRecognition();
-          recognition.continuous = true;
-          recognition.interimResults = true;
-          recognition.onresult = (event) => {
-            const transcript = Array.from(event.results)
-              .map((result) => result[0].transcript)
-              .join("");
-            setLiveTranscription(transcript);
-            setEditableTranscription(transcript);
-          };
-          recognition.start();
-          speechRecognitionRef.current = recognition;
-        }
-      })
-      .catch((err) => {
-        console.error("Error accessing microphone:", err);
-        setError("Unable to access microphone. Please check permissions.");
-        setIsRecording(false);
-      });
+      recorder.start(); // Start the recording
+      mediaRecorderRef.current = recorder;
+    } catch (err) {
+      console.error("Error accessing the microphone:", err);
+      setError("Failed to access microphone. Please allow microphone access.");
+    }
   };
 
   const stopRecording = () => {
-    if (!isRecording || !mediaRecorderRef.current) return;
-
-    setIsRecording(false);
-
-    // Stop media recorder
-    mediaRecorderRef.current.stop();
-    mediaRecorderRef.current = null;
-
-    // Stop speech recognition
-    if (speechRecognitionRef.current) {
-      speechRecognitionRef.current.stop();
-      speechRecognitionRef.current = null;
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop(); // Stop the MediaRecorder
+      setIsRecording(false);
     }
+    SpeechRecognition.stopListening(); // Stop speech recognition
 
-    // Preserve live transcription
+    // Add temporary transcription message with a unique id
     if (editableTranscription) {
       setMessages((prev) => [
         ...prev,
-        { sender: "User", text: editableTranscription },
+        { id: Date.now(), sender: "User", text: editableTranscription },
       ]);
     }
   };
 
+  const detectEmotion = async (audioBlob) => {
+    setIsEmotionDetecting(true); // Start emotion detection
+
+    try {
+      const formData = new FormData();
+      formData.append("audio", audioBlob, "audio.wav");
+
+      // Send the audio to the Flask server for emotion detection
+      const res = await fetch("http://localhost:5000/emotion-detection", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error: ${res.statusText}`);
+      }
+
+      const data = await res.json();
+      const detectedEmotion = data.emotion || "neutral"; // Default to "neutral" if no emotion detected
+
+      // Update the emotion state based on the response from the Flask server
+      setEmotion(detectedEmotion);
+      setIsEmotionDetecting(false); // Stop emotion detection
+    } catch (err) {
+      console.error("Error detecting emotion:", err);
+      setError("Failed to detect emotion. Please try again later.");
+      setIsEmotionDetecting(false); // Stop emotion detection in case of error
+    }
+  };
+
+  const speakText = (text) => {
+    if (window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US"; // You can change the language if needed
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.error("Speech synthesis not supported in this browser.");
+    }
+  };
+
   const handleUpload = async () => {
-    if (!audioBlob) {
-      setError("Please record audio before submitting.");
+    if (!editableTranscription) {
+      setError("Please provide some text before submitting.");
       return;
     }
 
     try {
-      const wavBlob = await convertWebMToWav(audioBlob);
-
       const formData = new FormData();
-      formData.append("audio", wavBlob, "recorded-audio.wav");
       formData.append("transcription", editableTranscription);
+      formData.append("emotion", emotion);
 
       const typingPhrases = [
         "Analyzing your argument...",
         "Formulating a logical response...",
-        "Crafting a compelling rebuttal...",
-        "Delving into the details...",
-        "Processing your perspective...",
-        "Weighing the merits of the argument...",
-        "Constructing a solid point...",
-        "Examining potential flaws in the logic...",
-        "Assessing the counterpoints...",
-        "Strengthening my stance...",
-        "Strategizing a thoughtful reply...",
-        "Synthesizing relevant facts...",
-        "Exploring alternative viewpoints...",
-        "Reflecting on the evidence...",
-        "Gauging the validity of claims...",
-        "Identifying gaps in reasoning...",
-        "Revisiting the foundation of the debate...",
-        "Reviewing critical aspects...",
-        "Engaging with the nuances of the topic...",
-        "Clarifying complex points...",
-        "Evaluating the broader implications...",
-        "Balancing objectivity with logic...",
-        "Connecting arguments to evidence...",
-        "Focusing on critical weaknesses...",
-        "Highlighting overlooked points...",
-        "Addressing contradictory perspectives...",
-        "Preparing a concise response...",
-        "Summarizing key arguments...",
-        "Enhancing the clarity of the discussion...",
-        "Integrating diverse perspectives...",
+        "Processing your thoughts...",
+        "Considering all perspectives...",
+        "Weighing the evidence...",
+        "Sifting through the data...",
+        "Exploring the nuances...",
+        "Building my counterpoint...",
+        "Calculating the optimal reply...",
+        "Assessing your reasoning...",
+        "Let me think for a moment...",
+        "Crunching the numbers...",
+        "Preparing a well-informed response...",
+        "Let me refine my thoughts...",
+        "Analyzing the pros and cons...",
+        "Gathering supporting facts...",
+        "Delving deeper into the topic...",
+        "Organizing my response...",
+        "Synthesizing the information...",
+        "Challenging your perspective...",
+        "Forming a precise reply...",
       ];
 
       const shuffleArray = (array) => {
@@ -170,6 +201,14 @@ const PlaygroundCard = () => {
       }
       setIsTyping(false);
 
+      // Update the last user message with the final transcription
+      setMessages((prev) => {
+        const updatedMessages = [...prev];
+        updatedMessages[updatedMessages.length - 1].text =
+          editableTranscription;
+        return updatedMessages;
+      });
+
       // Fetch the AI response
       const res = await fetch("http://localhost:8000/api/v1/services/debate", {
         method: "POST",
@@ -182,11 +221,14 @@ const PlaygroundCard = () => {
       const data = await res.json();
       const aiResponse = data.data.reply || "No reply available.";
 
+      // Immediately read the AI response out loud
+      speakText(aiResponse);
+
       // Simulate letter-by-letter typing for the AI response
       setMessages((prev) => [...prev, { sender: "AI", text: "" }]);
 
       let index = 0;
-      const typingSpeed = 40; // Faster typing effect
+      const typingSpeed = 65; // Faster typing effect
       const typingInterval = setInterval(() => {
         if (index < aiResponse.length) {
           setMessages((prev) => {
@@ -207,42 +249,12 @@ const PlaygroundCard = () => {
         }
       }, typingSpeed);
 
-      setAudioBlob(null);
-      speakText(aiResponse);
       setEditableTranscription("");
     } catch (err) {
-      console.error("Error submitting audio:", err);
-      setError("Failed to submit audio. Please try again later.");
+      console.error("Error submitting text:", err);
+      setError("Failed to submit text. Please try again later.");
       setIsTyping(false);
     }
-  };
-
-  const simulateTypingEffect = (phrases, delay) => {
-    let index = 0;
-    const interval = setInterval(() => {
-      setTypingText(phrases[index]);
-      index++;
-      if (index >= phrases.length) clearInterval(interval);
-    }, delay);
-  };
-
-  const convertWebMToWav = async (webmBlob) => {
-    const arrayBuffer = await webmBlob.arrayBuffer();
-    const audioContext = new AudioContext();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-    const wavData = await WavEncoder.encode({
-      sampleRate: audioBuffer.sampleRate,
-      channelData: [audioBuffer.getChannelData(0)], // Mono audio
-    });
-
-    return new Blob([wavData], { type: "audio/wav" });
-  };
-
-  const speakText = (text) => {
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = "en-US"; // You can set the language as needed
-    window.speechSynthesis.speak(speech);
   };
 
   return (
@@ -256,8 +268,7 @@ const PlaygroundCard = () => {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 1 }}
     >
-      {/* Vox Debate Playground text */}
-      <h1 className="text-2xl sm:text-4xl font-bold text-center mb-6 text-orange-500 drop-shadow-md">
+      <h1 className="text-4xl font-bold text-center mb-6 text-orange-500 drop-shadow-md">
         Vox Debate Playground
       </h1>
 
@@ -301,12 +312,52 @@ const PlaygroundCard = () => {
 
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
 
-      {/* Mobile responsive layout */}
-      <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 mt-6">
+      {/* Emotion Display */}
+      {emotion && (
+        <div
+          className={`mt-4 text-center text-xl font-semibold ${
+            emotion === "neutral"
+              ? "text-gray-500"
+              : emotion === "calm"
+              ? "text-blue-400"
+              : emotion === "happy"
+              ? "text-yellow-500"
+              : emotion === "sad"
+              ? "text-blue-500"
+              : emotion === "angry"
+              ? "text-red-500"
+              : emotion === "fear"
+              ? "text-purple-500"
+              : emotion === "disgust"
+              ? "text-green-500"
+              : emotion === "surprise"
+              ? "text-orange-500"
+              : "text-gray-700"
+          }`}
+        >
+          <p>Detected Emotion: {emotion}</p>
+        </div>
+      )}
+
+      {/* Emotion detection loading */}
+      {isEmotionDetecting && (
+        <div className="text-center text-lg text-gray-500 mt-2">
+          Detecting emotion...
+        </div>
+      )}
+
+      <div className="flex items-center space-x-4 mt-6">
+        <Button
+          onClick={isRecording ? stopRecording : startRecording}
+          className="flex-shrink-0 p-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-transform transform hover:scale-105"
+        >
+          {isRecording ? <FaStop /> : <FaMicrophoneAlt />}
+        </Button>
+
         <textarea
           value={editableTranscription}
           onChange={(e) => setEditableTranscription(e.target.value)}
-          className={`w-full sm:w-auto flex-grow p-4 rounded-md transition-all duration-300 ease-in-out resize-none shadow-md border-2 focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+          className={`flex-grow p-4 rounded-md transition-all duration-300 ease-in-out resize-none shadow-md border-2 focus:outline-none focus:ring-2 focus:ring-orange-500 ${
             theme === "dark"
               ? "bg-[#2b2b3d] text-white placeholder-gray-400 border-[#3c3c4d]"
               : "bg-gray-100 text-black placeholder-gray-600 border-gray-300"
@@ -315,21 +366,12 @@ const PlaygroundCard = () => {
           rows={3}
         />
 
-        <div className="flex space-x-4">
-          <Button
-            onClick={handleUpload}
-            className="p-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg transition-transform transform hover:scale-105"
-          >
-            <FaPaperPlane />
-          </Button>
-
-          <Button
-            onClick={isRecording ? stopRecording : startRecording}
-            className="p-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-transform transform hover:scale-105"
-          >
-            {isRecording ? <FaStop /> : <FaMicrophoneAlt />}
-          </Button>
-        </div>
+        <Button
+          onClick={handleUpload}
+          className="flex-shrink-0 p-4 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg transition-transform transform hover:scale-105"
+        >
+          <FaPaperPlane />
+        </Button>
       </div>
     </motion.div>
   );
