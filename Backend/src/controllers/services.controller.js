@@ -40,8 +40,8 @@ const getGeminiResponse = async (question, emotion = "neutral") => {
     const context = conversationHistory.join("\n");
 
     // Adjust the prompt to focus on debate and conciseness
-    const prompt = `Let's debate. The response should be have relevant reasons and precise.Donot give point-wise responses. Respond with direct counter-arguments. Do not add words related to prompts. Make it look like a person's own response. Respond based on user's emotion and currently user's emotion is ${emotion}. So converse in that way. Remove keywords like AI and user and just make it sound like human.Should be mediums-sized response.
-    Here is the conversation so far:\n${context}\n
+    const prompt = `Let's debate. The response should be have relevant reasons and should be precise. Do not give point-wise responses. Respond with direct counter-arguments. Do not add words related to prompts. Make it look like a person's own response. Please respond after taking into account user's emotion and currently user's emotion says he/she is ${emotion}. Do not specify through answers that you understand the emotions just customize answers considering those emotions. So converse in that way conidering above points. Remove keywords like AI and user and just make it sound like human.Should be small-sized response.
+    Here is the conversation so far to give idea of previous discussions :\n${context}\n
     User: ${question}\n
     AI:`;
 

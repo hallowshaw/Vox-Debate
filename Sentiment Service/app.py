@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from emotion_recognition import detect_emotion
 import os
+from emotion_recognition import detect_emotion
 
 app = Flask(__name__)
 
@@ -10,15 +10,19 @@ CORS(app)
 
 @app.route('/emotion-detection', methods=['POST'])
 def emotion_detection():
-    if 'audio' not in request.files:
-        return jsonify({'error': 'No audio file provided'}), 400
+    # Check if 'transcription' is in the request
+    if 'transcription' not in request.json:
+        return jsonify({'error': 'No transcription provided'}), 400
 
-    audio_file = request.files['audio']
+    transcription = request.json['transcription']  # Get the transcription text from the request
     try:
-        emotion = detect_emotion(audio_file)
+        # Get the emotion using the detect_emotion function
+        emotion = detect_emotion(transcription)
         return jsonify({'emotion': emotion})
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        # Log the error and return a default emotion
+        print(f"Error: {str(e)}")
+        return jsonify({'emotion': 'neutral'})
 
 @app.route('/favicon.ico')
 def favicon():

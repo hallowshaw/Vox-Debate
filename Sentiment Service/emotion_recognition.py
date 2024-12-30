@@ -1,46 +1,54 @@
+import tensorflow as tf
 import numpy as np
-import librosa
+from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+import pickle
+import string
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
 
-# Load the pre-trained model
-model = load_model('emotion_model.h5')
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+# Ensure the necessary NLTK data is downloaded (run this if needed)
+nltk.download('punkt')
+nltk.download('stopwords')
 
-def extract_features_from_audio(audio_path, duration=2.5, offset=0.6, sr=22050):
-    # Load the audio file using librosa
-    data, sr = librosa.load(audio_path, sr=sr, duration=duration, offset=offset)
-    result = np.array([])
+# Load the trained model
+model = load_model('emotion_recognizer.h5')  # Use your actual model file
 
-    # Extract features
-    zcr = np.mean(librosa.feature.zero_crossing_rate(y=data).T, axis=0)
-    result = np.hstack((result, zcr))
+# Load the tokenizer (you should have saved this during training)
+with open('tokenizer.pkl', 'rb') as f:
+    tokenizer = pickle.load(f)
 
-    chroma_stft = np.mean(librosa.feature.chroma_stft(S=np.abs(librosa.stft(data)), sr=sr).T, axis=0)
-    result = np.hstack((result, chroma_stft))
+maxlen = 100  # Max length of the input text sequences
 
-    mfcc = np.mean(librosa.feature.mfcc(y=data, sr=sr).T, axis=0)
-    result = np.hstack((result, mfcc))
+# Emotion labels (adjust according to your model's training)
+emotion_labels = ['angry', 'fear', 'happy', 'love', 'sad', 'surprised']
 
-    rms = np.mean(librosa.feature.rms(y=data).T, axis=0)
-    result = np.hstack((result, rms))
+# Preprocess the input text: tokenization, stopword removal, and punctuation handling
+def preprocess_texts(texts):
+    stop_words = set(stopwords.words('english'))
+    preprocessed_texts = []
 
-    mel = np.mean(librosa.feature.melspectrogram(y=data, sr=sr).T, axis=0)
-    result = np.hstack((result, mel))
+    for txt in texts:
+        words = word_tokenize(txt.lower())  # Tokenize and convert to lowercase
+        filtered_txt = [word for word in words if word not in stop_words and word not in string.punctuation]
+        preprocessed_texts.append(' '.join(filtered_txt))
+    
+    return preprocessed_texts
 
-    return result
+# Function to detect emotion from a given text input
+def detect_emotion(text):
+    # Preprocess the text
+    preprocessed_text = preprocess_texts([text])
 
-def detect_emotion(audio):
-    temp_audio_path = 'temp_audio.wav'
-    with open(temp_audio_path, 'wb') as f:
-        f.write(audio.read())
+    # Convert the preprocessed text into a sequence of tokens
+    seq = tokenizer.texts_to_sequences(preprocessed_text)
+    padded_seq = pad_sequences(seq, maxlen=maxlen)
 
-    # Extract features
-    features = extract_features_from_audio(temp_audio_path)
-    features = np.expand_dims(features, axis=0)
+    # Predict the emotion from the model
+    prediction = model.predict(padded_seq)
+    emotion_index = np.argmax(prediction, axis=1)[0]
 
-    # Predict emotion
-    predictions = model.predict(features)
-    emotion_classes = ['neutral', 'calm', 'happy', 'sad', 'angry', 'fear', 'disgust', 'surprise']
-    detected_emotion = emotion_classes[np.argmax(predictions)]
-
-    return detected_emotion
+    # Return the corresponding emotion label
+    return emotion_labels[emotion_index]
