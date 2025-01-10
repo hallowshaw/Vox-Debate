@@ -59,3 +59,23 @@ main {
   padding-top: 20px;
   transition: margin-left 0.3s ease, padding 0.3s ease;
 }
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  51% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 6s linear infinite;
+  background-size: 200% 200%;
+}

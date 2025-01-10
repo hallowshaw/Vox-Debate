@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -8,7 +7,6 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -91,6 +89,7 @@ const Header = () => {
                 <ListItem
                   onClick={(e) => handleLinkClick(e, "/manual")}
                   title="Guide"
+                  style={{ cursor: "pointer" }}
                 ></ListItem>
                 <ListItem href="/testimonials" title="Testimonials"></ListItem>
               </ul>

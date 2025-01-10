@@ -2,6 +2,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import axios from "axios";
+import fs from "fs";
 
 dotenv.config();
 
@@ -11,6 +13,47 @@ const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Use the corr
 
 // Store conversation history in memory
 let conversationHistory = [];
+
+// Hugging Face API details
+const HF_API_URL =
+  "https://api-inference.huggingface.co/models/superb/hubert-large-superb-er";
+const headers = { Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}` };
+
+// Mapping of emotion labels to full forms
+const EMOTION_MAP = {
+  hap: "Happy",
+  ang: "Angry",
+  sad: "Sad",
+  neu: "Neutral",
+};
+
+// Helper function to detect emotion from audio
+const detectEmotion = async (filePath) => {
+  try {
+    const fileStream = fs.createReadStream(filePath);
+
+    while (true) {
+      const response = await axios.post(HF_API_URL, fileStream, { headers });
+      const result = response.data;
+
+      if (result.error && result.error.includes("loading")) {
+        const estimatedTime = result.estimated_time || 60;
+        await new Promise((resolve) =>
+          setTimeout(resolve, estimatedTime * 1000)
+        );
+      } else {
+        // Find the emotion with the highest score and return it
+        const maxEmotion = result.reduce((prev, curr) =>
+          prev.score > curr.score ? prev : curr
+        );
+        return EMOTION_MAP[maxEmotion.label] || "Unknown";
+      }
+    }
+  } catch (error) {
+    console.error("Error during emotion detection:", error.message);
+    return "Unknown";
+  }
+};
 
 // Helper function to filter AI responses and make them concise
 const filterResponse = (responseText) => {
@@ -102,4 +145,41 @@ const debateService = asyncHandler(async (req, res) => {
   }
 });
 
-export { debateService };
+// Emotion detection service to process an audio file and return the detected emotion
+const emotionDetectionService = asyncHandler(async (req, res) => {
+  const audioFile = req.file;
+
+  if (!audioFile) {
+    return res.status(400).json({
+      success: false,
+      message: "No audio file provided",
+    });
+  }
+
+  try {
+    // Detect emotion from the provided audio file
+    const emotion = await detectEmotion(audioFile.path);
+
+    // Delete the audio file after emotion detection
+    fs.unlink(audioFile.path, (err) => {
+      if (err) {
+        console.error("Error deleting audio file:", err);
+      } else {
+        console.log("Audio file deleted successfully");
+      }
+    });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { emotion }, "Emotion detected successfully"));
+  } catch (error) {
+    console.error("Error during emotion detection:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to detect emotion",
+      errors: error.message || "Unknown error",
+    });
+  }
+});
+
+export { debateService, emotionDetectionService };
