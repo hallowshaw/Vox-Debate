@@ -61,7 +61,108 @@ VoxDebate is an innovative AI-powered debate platform built on the **MERN Vite S
    npm i @google/generative-ai axios bcrypt concurrently cookie-parser cors dotenv express jsonwebtoken mongodb mongoose multer nodemon prettier
    ```
 4. Set up environment variables:
-   
+    - Create a .env file in the backend directory and replace with actual values
+   ```
+   PORT=8000
+   MONGODB_URI=
+
+   ACCESS_TOKEN_SECRET=
+
+   ACCESS_TOKEN_EXPIRY=
+
+   REFRESH_TOKEN_SECRET=
+   REFRESH_TOKEN_EXPIRY=
+
+   CORS_ORIGIN=*
+
+   GOOGLE_API_KEY=
+
+   HUGGINGFACE_API_KEY=
+   ```
+
+5. Run the application:
+   - Frontend
+   ```
+   npm run dev
+   ```
+   - Backend
+   ```
+   npm run server
+   ```
+   - Use concurrently - for both Backend and Frontend
+   ```
+   cd Backend
+   npm run dev
+   ```
+
+
+## 🖼️ Screenshots
+
+Below are some screenshots of the application showcasing its features:
+
+### Vox Debate Playground
+![Vox Debate Playground](path/to/screenshot1.png)
+
+### Real-Time Text Editing
+![Real-Time Text Editing](path/to/screenshot2.png)
+
+### Emotion Analysis Display
+![Emotion Analysis](path/to/screenshot3.png)
+
+### Dark and Light Mode
+![Dark and Light Mode](path/to/screenshot4.png)
+
+---
+
+## 🤝 Contribution
+
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository.
+2. Create a new branch:
+   ```bash
+   git checkout -b feature-name
+   ```
+3. Make your changes and commit them:
+   ```
+   git commit -m "Add feature-name"
+   ```
+4. Push your branch:
+   ```
+   git push origin feature-name
+   ```
+5. Open a Pull Request.
+
+We’ll review your changes and merge them if everything checks out!
+
+
+## 📄 License
+
+This project is licensed under the **MIT License**.  
+Feel free to use it, modify it, and share it while giving credit to the original creators.  
+For more details, please see the [LICENSE](LICENSE) file.
+
+---
+
+## 🌟 Acknowledgments
+
+A big thank you to:
+
+- **Hugging Face** for their powerful AI models, which have been integrated for sentiment analysis.
+- **Google** for providing the Gemini Pro model, which powers the intelligent responses in the debate platform.
+- The open-source community for their amazing tools and libraries, which have made this project possible.
+  
+Thank you to everyone who contributes and helps make this project better. 🙏
+
+
+
+
+
+
+
+
+
+
 
 
 
