@@ -101,18 +101,17 @@ VoxDebate is an innovative AI-powered debate platform built on the **MERN Stack*
 Below are some screenshots of the application showcasing its features:
 
 ### Vox Debate Playground
-![Vox Debate Playground](path/to/screenshot1.png)
+![Vox Debate Playground](Screenshots/vox_debate_playground.png)
 
 ### Real-Time Text Editing
-![Real-Time Text Editing](path/to/screenshot2.png)
+![Real-Time Text Editing](Screenshots/real_time_text_editing.png)
 
 ### Emotion Analysis Display
-![Emotion Analysis](path/to/screenshot3.png)
+![Emotion Analysis](Screenshots/emotion_analysis.png)
 
 ### Dark and Light Mode
-![Dark and Light Mode](path/to/screenshot4.png)
+![Dark and Light Mode](Screenshots/dark_light_mode.png)
 
----
 
 ## 🤝 Contribution
 
