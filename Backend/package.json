@@ -9,7 +9,7 @@
     "client": "npm run dev --prefix ../Frontend",
     "dev": "concurrently \"npm run server\" \"npm run client\""
   },
-  "author": "Soumik Sen",
+  "author": "Rhitam Chaudhury",
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
