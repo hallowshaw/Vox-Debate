@@ -1,6 +1,6 @@
 # VoxDebate - AI Debate Platform
 
-VoxDebate is an innovative AI-powered debate platform built on the **MERN Vite Stack**. It leverages advanced technologies, including Hugging Face's AI models and Google Gemini Pro, to create a seamless and intelligent debating experience. With its user-friendly interface, VoxDebate transforms the way users engage in meaningful discussions.
+VoxDebate is an innovative AI-powered debate platform built on the **MERN Stack**. It leverages advanced technologies, including Hugging Face's AI models and Google Gemini Pro, to create a seamless and intelligent debating experience. With its user-friendly interface, VoxDebate transforms the way users engage in meaningful discussions.
 
 ---
 
