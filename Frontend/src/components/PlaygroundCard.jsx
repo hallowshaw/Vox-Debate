@@ -237,11 +237,11 @@ const PlaygroundCard = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className={`w-full max-w-[900px] h-auto min-h-[85vh] flex flex-col rounded-3xl shadow-2xl mx-auto p-4 space-y-4 sm:p-8 ${
+      className={`w-full max-w-[900px] h-[85vh] flex flex-col rounded-3xl shadow-2xl mx-auto p-4 space-y-4 sm:p-8 ${
         theme === "dark"
           ? "bg-gradient-to-br from-[#18181b] to-[#1f1f25] text-white"
           : "bg-gradient-to-br from-white to-gray-100 text-gray-800"
-      } overflow-visible`}
+      } overflow-hidden`} // Prevents overflow
     >
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
@@ -258,6 +258,10 @@ const PlaygroundCard = () => {
         } lg:w-full sm:mx-auto border ${
           theme === "dark" ? "border-[#2e2e3e]" : "border-gray-200"
         }`}
+        style={{
+          maxHeight: "calc(100% - 150px)", // Subtracts space for other elements
+          overflowY: "auto", // Enables vertical scrolling
+        }}
       >
         {messages.map((msg, index) => (
           <motion.div
