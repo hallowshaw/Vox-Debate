@@ -21,6 +21,11 @@ const App = () => {
   const withTitlebar = (Component) => (
     <>
       <Titlebar />
+      <img
+        src="/logo2.png"
+        alt="Logo"
+        className="absolute top-4 right-6 w-20 h-auto md:w-24 z-50 opacity-85"
+      />
       <Component />
     </>
   );
